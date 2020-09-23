@@ -1,0 +1,64 @@
+service: evo-wold
+
+custom:
+  settings:
+    CARS_TABLE: cars
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: us-east-2
+  environment: ${self:custom.settings}
+  iamRoleStatements:
+   - Effect: "Allow"
+     Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+     Resource:
+      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.CARS_TABLE}"
+
+functions:
+  createCar:
+    handler: handler.createCar
+    events:
+    - http:
+        path: /create
+        method: post
+  getAllOptions:
+    handler: handler.getAllOptions
+    events:
+    - http:
+        path: /options
+        method: get
+  getCar:
+    handler: handler.getCar
+    events:
+    - http:
+        path: /car/{id}
+        method: get
+  getAllPrices:
+    handler: handler.getAllPrices
+    events:
+    - http:
+        path: /prices
+        method: get 
+
+resources:
+  Resources:
+    CarsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"    
+        KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.settings.CARS_TABLE}
